@@ -6,6 +6,7 @@
  *    Rob Clark <robclark@freedesktop.org>
  */
 
+#include "compiler/glsl_types.h"
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"
 #include "tgsi/tgsi_dump.h"
@@ -513,6 +514,11 @@ ir3_screen_init(struct pipe_screen *pscreen)
 {
    struct fd_screen *screen = fd_screen(pscreen);
 
+   /* Shader workers can outlive Mesa's GL atexit cleanup. Keep their NIR
+    * types alive until the compile queue has been joined.
+    */
+   glsl_type_singleton_init_or_ref();
+
    struct ir3_compiler_options options = {
       .bindless_fb_read_descriptor =
          ir3_shader_descriptor_set(MESA_SHADER_FRAGMENT),
@@ -563,6 +569,7 @@ ir3_screen_fini(struct pipe_screen *pscreen)
    util_queue_destroy(&screen->compile_queue);
    ir3_compiler_destroy(screen->compiler);
    screen->compiler = NULL;
+   glsl_type_singleton_decref();
 }
 
 void
