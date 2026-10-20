@@ -46,6 +46,7 @@
 #include "main/glconfig.h"
 #include "egl_dri2.h"
 #include "eglglobals.h"
+#include "eglarray.h"
 #include "loader.h"
 #include "loader_dri_helper.h"
 #include "platform_android.h"
@@ -1287,6 +1288,17 @@ dri2_initialize_android(_EGLDisplay *disp)
     * driver extensions can affect the capabilities of EGLConfigs.
     */
    droid_add_configs_for_visuals(disp);
+
+   /* Advertise float pixels only when Android has a matching window config. */
+   disp->Extensions.EXT_pixel_format_float = EGL_FALSE;
+   for (int i = 0; i < _eglGetArraySize(disp->Configs); i++) {
+      const _EGLConfig *config = disp->Configs->Elements[i];
+      if (config->ComponentType == EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT &&
+          (config->SurfaceType & EGL_WINDOW_BIT)) {
+         disp->Extensions.EXT_pixel_format_float = EGL_TRUE;
+         break;
+      }
+   }
 
    /* Fill vtbl last to prevent accidentally calling virtual function during
     * initialization.
